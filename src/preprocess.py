@@ -1,5 +1,5 @@
 import pandas as pd
-from src.riot_api import get_match_data
+from src.riot_api import get_match_data, get_match_history
 
 def extract_team_stats_and_champions(match_data: dict) -> dict:
     "Extracts team stats and champions from match data."
@@ -42,7 +42,7 @@ def extract_team_stats_and_champions(match_data: dict) -> dict:
     return features
 
 def build_dataset_from_match_ids(match_ids: list, save_path="data/raw_matches.csv") -> None:
-    """Builds a dataset from a list of match IDs and saves it to a CSV."""
+    "Builds a dataset from a list of match IDs and saves it to a CSV."
     all_features = []
 
     for match_id in match_ids:
@@ -58,3 +58,21 @@ def build_dataset_from_match_ids(match_ids: list, save_path="data/raw_matches.cs
     df = df.fillna(0)  # fill missing champion columns with 0
     df.to_csv(save_path, index=False)
     print(f"Saved {len(df)} matches to {save_path}")
+
+def get_player_winrate(puuid: str, num_matches=20) -> float:
+    "Compute the winrate of a player based on their last num_matches."
+    match_ids = get_match_history(puuid, total_matches=num_matches)
+
+    if not match_ids:
+        return 0.5  # No matches found, return neutral winrate
+    
+    wins = 0
+    for match_id in match_ids:
+        match_data = get_match_data(match_id)
+        for p in match_data["info"]["participants"]:
+            if p["puuid"] == puuid:
+                if p["win"]:
+                    wins += 1
+                break
+
+    return wins / len(match_ids)
