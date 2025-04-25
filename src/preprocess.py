@@ -1,5 +1,6 @@
 import pandas as pd
 from src.riot_api import get_match_data, get_match_history
+from collections import Counter
 
 def extract_team_stats_and_champions(match_data: dict) -> dict:
     "Extracts team stats and champions from match data."
@@ -76,3 +77,31 @@ def get_player_winrate(puuid: str, num_matches=20) -> float:
                 break
 
     return wins / len(match_ids)
+
+def get_player_preferred_role(puuid: str, num_matches=30) -> str:
+    "Compute the preferred role of a player based on their last num_matches."
+    match_ids = get_match_history(puuid, total_matches=num_matches)
+
+    if not match_ids:
+        return "UNKNOWN"  # No matches found, return unknown role
+
+    role_counter = Counter()
+
+    for match_id in match_ids:
+        try:
+            match_data = get_match_data(match_id)
+            for participant in match_data["info"]["participants"]:
+                if participant["puuid"] == puuid:
+                    position = participant.get("teamPosition", "UNKNOWN")
+                    if position != "NONE" and position != "":
+                        role_counter[position] += 1
+                    break  # Found our player, stop looping
+        except Exception as e:
+            print(f"Error processing match {match_id}: {e}")
+            continue
+
+    if not role_counter:
+        return "UNKNOWN"
+
+    # Return the most common role
+    return role_counter.most_common(1)[0][0]

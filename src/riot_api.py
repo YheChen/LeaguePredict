@@ -39,6 +39,17 @@ def summoner_from_puuid(puuid: str, region="na1") -> str:
     data = riot_get(url)
     return data["accountId"]
 
+def get_player_rank(summoner_id: str, region="na1") -> dict:
+    """Get the rank of a summoner by their summoner ID."""
+    url = f"https://{region}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}"
+    data = riot_get(url)
+    if not data:
+        return "UNRANKED"
+    for entry in data:
+        if entry["queueType"] == "RANKED_SOLO_5x5":
+            return entry["tier"], entry["rank"]
+    return "UNRANKED"
+
 # Match-V5
 def get_match_history(puuid: str, region="americas", total_matches=100) -> list:
     """Get up to total_matches match IDs for a summoner by their PUUID."""
