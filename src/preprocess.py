@@ -105,3 +105,32 @@ def get_player_preferred_role(puuid: str, num_matches=30) -> str:
 
     # Return the most common role
     return role_counter.most_common(1)[0][0]
+
+def get_player_champion_winrate(puuid: str, champion_id, num_matches=30) -> float:
+    "Compute the winrate of a player's champion based on their last num_matches."
+    match_ids = get_match_history(puuid, total_matches=num_matches)
+
+    if not match_ids:
+        return 0.5  # No matches found, return neutral winrate
+    
+    champ_matches = 0
+    champ_wins = 0
+
+    for match_id in match_ids:
+        try:
+            match_data = get_match_data(match_id)
+            for participant in match_data["info"]["participants"]:
+                if participant["puuid"] == puuid:
+                    if participant["championId"] == champion_id:
+                        champ_matches += 1
+                        if participant["win"]:
+                            champ_wins += 1
+                    brea
+        except Exception as e:
+            print(f"Error processing match {match_id}: {e}")
+            continue
+
+    if champ_matches == 0:
+        return 0.5  # If no recent games on that champ, assume neutral 50% winrate
+
+    return champ_wins / champ_matches
